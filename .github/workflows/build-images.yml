@@ -131,20 +131,29 @@ jobs:
 
       - name: Update backend image
         run: |
-          sed -i "s|ghcr.io/.*/copilot-backend:.*|${BACKEND_IMAGE}:${BACKEND_SHA}|" \
+          BACKEND_TAG=$(echo "$BACKEND_IMAGE" | grep "sha-" | head -1)
+          if [ -z "$BACKEND_TAG" ]; then
+            echo "No sha-* tag found in BACKEND_IMAGE, skipping"
+            exit 0
+          fi
+          sed -i "s|ghcr.io/.*/copilot-backend:.*|${BACKEND_TAG}|" \
             helm/devops-copilot/values.yaml
-          echo "Backend image set to: ${BACKEND_IMAGE}:${BACKEND_SHA}"
+          echo "Backend image set to: $BACKEND_TAG"
         env:
           BACKEND_IMAGE: ${{ needs.backend.outputs.tag }}
-          BACKEND_SHA: ${{ github.sha }}
 
       - name: Update frontend image
         run: |
-          sed -i "s|ghcr.io/.*/copilot-frontend:.*|${FRONTEND_IMAGE}:${FRONTEND_SHA}|" \
+          FRONTEND_TAG=$(echo "$FRONTEND_IMAGE" | grep "sha-" | head -1)
+          if [ -z "$FRONTEND_TAG" ]; then
+            echo "No sha-* tag found in FRONTEND_IMAGE, skipping"
+            exit 0
+          fi
+          sed -i "s|ghcr.io/.*/copilot-frontend:.*|${FRONTEND_TAG}|" \
             helm/devops-copilot/values.yaml
+          echo "Frontend image set to: $FRONTEND_TAG"
         env:
           FRONTEND_IMAGE: ${{ needs.frontend.outputs.tag }}
-          FRONTEND_SHA: ${{ github.sha }}
 
       - name: Open PR
         uses: peter-evans/create-pull-request@v6

@@ -1,9 +1,8 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +17,7 @@ class Tool(ABC):
     dangerous: bool = False
 
     @abstractmethod
-    async def execute(self, **kwargs: Any) -> str:
-        ...
+    async def execute(self, **kwargs: Any) -> str: ...
 
     def schema(self) -> Dict[str, Any]:
         return {
@@ -58,7 +56,11 @@ class ToolRegistry:
         try:
             logger.info("tool_invocation", extra={"name": name, "args": arguments})
             result = await tool.execute(**arguments)
-            return truncate(result if isinstance(result, str) else json.dumps(result, indent=2, default=str))
+            return truncate(
+                result
+                if isinstance(result, str)
+                else json.dumps(result, indent=2, default=str)
+            )
         except Exception as e:
             logger.exception("tool_execution_failed", extra={"name": name})
             return json.dumps({"error": str(e), "tool": name})

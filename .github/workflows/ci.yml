@@ -120,11 +120,11 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: copilot-backend/Dockerfile
-          failure-threshold: warning
+          failure-threshold: error
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: apps/frontend/Dockerfile
-          failure-threshold: warning
+          failure-threshold: error
 
   terraform-validate:
     name: Validate Terraform

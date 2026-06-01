@@ -6,6 +6,7 @@ Usage:
 
     PATH defaults to ./runbooks
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -26,7 +27,9 @@ async def main() -> None:
     store = VectorStore(settings.database_url, dim=settings.embedding_dim)
     connected = await store.connect()
     if not connected:
-        print("[ingest] ERROR: could not connect to vector store. Is Postgres+pgvector running?")
+        print(
+            "[ingest] ERROR: could not connect to vector store. Is Postgres+pgvector running?"
+        )
         sys.exit(1)
 
     print(f"[ingest] loading embedding model {settings.embedding_model}")
@@ -35,7 +38,9 @@ async def main() -> None:
 
     print(f"[ingest] scanning {target}")
     summary = await rag.ingest_directory(target)
-    print(f"[ingest] done: {summary['ingested']} chunks across {len(summary['files'])} files")
+    print(
+        f"[ingest] done: {summary['ingested']} chunks across {len(summary['files'])} files"
+    )
     for f in summary["files"]:
         print(f"  - {f['file']}: {f['chunks']} chunks")
 

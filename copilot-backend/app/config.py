@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     prometheus_url: str = Field(default="http://localhost:9090")
     loki_url: str = Field(default="http://localhost:3100")
 
-    database_url: str = Field(default="postgresql://copilot:copilot@localhost:5432/copilot")
+    database_url: str = Field(
+        default="postgresql://copilot:copilot@localhost:5432/copilot"
+    )
     embedding_model: str = Field(default="BAAI/bge-small-en-v1.5")
     embedding_dim: int = Field(default=384)
     rag_top_k: int = Field(default=4)

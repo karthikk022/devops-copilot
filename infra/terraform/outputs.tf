@@ -16,8 +16,8 @@ output "kubeconfig_command" {
 
 output "next_steps" {
   value = [
-    "1. Save kubeconfig: ${self.kubeconfig_command.value}",
-    "2. Set KUBECONFIG env var: $env:KUBECONFIG=\"$(Resolve-Path ${var.kubeconfig_path})\"",
+    "1. Run: terraform output -raw kubeconfig_command",
+    "2. Set KUBECONFIG env var: export KUBECONFIG=${var.kubeconfig_path}",
     "3. Verify: kubectl get nodes",
     "4. Deploy: kubectl apply -f infra/k8s/manifests/",
   ]

@@ -98,7 +98,9 @@ class VectorStore:
                 """,
                 rows,
             )
-        logger.info("vector_store_upserted", extra={"source": rows[0][0], "chunks": len(rows)})
+        logger.info(
+            "vector_store_upserted", extra={"source": rows[0][0], "chunks": len(rows)}
+        )
         return len(rows)
 
     async def search(
@@ -126,14 +128,18 @@ class VectorStore:
             return 0
         async with self.pool.acquire() as conn:
             if source:
-                return await conn.fetchval("SELECT COUNT(*) FROM documents WHERE source = $1", source)
+                return await conn.fetchval(
+                    "SELECT COUNT(*) FROM documents WHERE source = $1", source
+                )
             return await conn.fetchval("SELECT COUNT(*) FROM documents")
 
     async def list_sources(self) -> List[str]:
         if not self.pool:
             return []
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch("SELECT DISTINCT source FROM documents ORDER BY source")
+            rows = await conn.fetch(
+                "SELECT DISTINCT source FROM documents ORDER BY source"
+            )
         return [r["source"] for r in rows]
 
     async def close(self) -> None:

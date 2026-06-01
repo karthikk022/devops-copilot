@@ -39,3 +39,9 @@ variable "k3s_version" {
   type        = string
   default     = "v1.30.4+k3s1"
 }
+
+variable "ssh_public_key_file" {
+  description = "Path to a public SSH key to install on the cluster nodes"
+  type        = string
+  default     = "./fixtures/ssh_key.pub"
+}

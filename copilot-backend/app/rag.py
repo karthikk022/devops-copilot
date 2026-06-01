@@ -10,7 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class RAGPipeline:
-    def __init__(self, store: VectorStore, embedder: EmbeddingClient, top_k: int = 4, threshold: float = 0.35):
+    def __init__(
+        self,
+        store: VectorStore,
+        embedder: EmbeddingClient,
+        top_k: int = 4,
+        threshold: float = 0.35,
+    ):
         self.store = store
         self.embedder = embedder
         self.top_k = top_k

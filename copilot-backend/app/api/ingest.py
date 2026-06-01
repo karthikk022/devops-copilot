@@ -27,7 +27,9 @@ def get_rag(request: Request) -> RAGPipeline:
 
 
 @router.post("", response_model=IngestResponse)
-async def ingest(req: IngestRequest, request: Request, rag: RAGPipeline = Depends(get_rag)):
+async def ingest(
+    req: IngestRequest, request: Request, rag: RAGPipeline = Depends(get_rag)
+):
     if not request.app.state.vectorstore.connected:
         raise HTTPException(status_code=503, detail="vector store not connected")
 
@@ -35,7 +37,9 @@ async def ingest(req: IngestRequest, request: Request, rag: RAGPipeline = Depend
     import tempfile
 
     if req.content is not None and req.source_name is not None:
-        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
             f.write(req.content)
             tmp_path = Path(f.name)
         try:
@@ -44,10 +48,13 @@ async def ingest(req: IngestRequest, request: Request, rag: RAGPipeline = Depend
         finally:
             if tmp_path.exists():
                 tmp_path.unlink()
-        return IngestResponse(ingested=n, files=[{"file": req.source_name, "chunks": n}])
+        return IngestResponse(
+            ingested=n, files=[{"file": req.source_name, "chunks": n}]
+        )
 
     if req.file:
         from pathlib import Path
+
         n = await rag.ingest_file(Path(req.file))
         return IngestResponse(ingested=n, files=[{"file": req.file, "chunks": n}])
 
@@ -55,7 +62,9 @@ async def ingest(req: IngestRequest, request: Request, rag: RAGPipeline = Depend
         summary = await rag.ingest_directory(req.directory)
         return IngestResponse(**summary)
 
-    raise HTTPException(status_code=400, detail="Provide one of: file | directory | content+source_name")
+    raise HTTPException(
+        status_code=400, detail="Provide one of: file | directory | content+source_name"
+    )
 
 
 @router.get("/sources")

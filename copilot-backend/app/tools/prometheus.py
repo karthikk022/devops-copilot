@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import httpx
 
@@ -16,7 +16,9 @@ class PromClient:
 
     async def _ensure(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(base_url=self.base_url, timeout=httpx.Timeout(15.0, connect=5.0))
+            self._client = httpx.AsyncClient(
+                base_url=self.base_url, timeout=httpx.Timeout(15.0, connect=5.0)
+            )
         return self._client
 
     async def close(self) -> None:
@@ -30,7 +32,9 @@ class PromClient:
         r.raise_for_status()
         return r.json()
 
-    async def query_range(self, query: str, start: int, end: int, step: int = 30) -> dict:
+    async def query_range(
+        self, query: str, start: int, end: int, step: int = 30
+    ) -> dict:
         client = await self._ensure()
         r = await client.get(
             "/api/v1/query_range",
@@ -50,7 +54,10 @@ class PromQuery(Tool):
     parameters = {
         "type": "object",
         "properties": {
-            "query": {"type": "string", "description": "PromQL expression, e.g. 'sum(rate(http_requests_total{app=\"sample-api\"}[5m]))'"},
+            "query": {
+                "type": "string",
+                "description": "PromQL expression, e.g. 'sum(rate(http_requests_total{app=\"sample-api\"}[5m]))'",
+            },
         },
         "required": ["query"],
     }
@@ -63,31 +70,46 @@ class PromQuery(Tool):
             data = await self.client.query(query)
         except httpx.HTTPStatusError as e:
             body = e.response.text[:1500] if e.response else str(e)
-            return json.dumps({"error": f"Prometheus returned {e.response.status_code}", "body": body})
+            return json.dumps(
+                {"error": f"Prometheus returned {e.response.status_code}", "body": body}
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
         result_type = data.get("data", {}).get("resultType", "—")
         results = data.get("data", {}).get("result", [])
         if not results:
-            return json.dumps({"query": query, "resultType": result_type, "result": "no data (empty series)"})
+            return json.dumps(
+                {
+                    "query": query,
+                    "resultType": result_type,
+                    "result": "no data (empty series)",
+                }
+            )
 
         compact = []
         for r in results[:20]:
             metric = r.get("metric", {})
             value = r.get("value", [None, "0"])
-            compact.append({
-                "labels": {k: v for k, v in metric.items() if not k.startswith("__")},
-                "value": value[1] if len(value) > 1 else value[0],
-                "timestamp": value[0] if len(value) > 0 else None,
-            })
+            compact.append(
+                {
+                    "labels": {
+                        k: v for k, v in metric.items() if not k.startswith("__")
+                    },
+                    "value": value[1] if len(value) > 1 else value[0],
+                    "timestamp": value[0] if len(value) > 0 else None,
+                }
+            )
 
-        return json.dumps({
-            "query": query,
-            "resultType": result_type,
-            "result_count": len(results),
-            "result": compact,
-        }, indent=2)
+        return json.dumps(
+            {
+                "query": query,
+                "resultType": result_type,
+                "result_count": len(results),
+                "result": compact,
+            },
+            indent=2,
+        )
 
 
 class PromQueryRange(Tool):
@@ -100,8 +122,18 @@ class PromQueryRange(Tool):
         "type": "object",
         "properties": {
             "query": {"type": "string"},
-            "minutes": {"type": "integer", "default": 30, "minimum": 1, "maximum": 1440},
-            "step_seconds": {"type": "integer", "default": 30, "minimum": 5, "maximum": 600},
+            "minutes": {
+                "type": "integer",
+                "default": 30,
+                "minimum": 1,
+                "maximum": 1440,
+            },
+            "step_seconds": {
+                "type": "integer",
+                "default": 30,
+                "minimum": 5,
+                "maximum": 600,
+            },
         },
         "required": ["query"],
     }
@@ -109,12 +141,17 @@ class PromQueryRange(Tool):
     def __init__(self, client: PromClient):
         self.client = client
 
-    async def execute(self, query: str, minutes: int = 30, step_seconds: int = 30) -> str:
+    async def execute(
+        self, query: str, minutes: int = 30, step_seconds: int = 30
+    ) -> str:
         import time
+
         end = int(time.time())
         start = end - minutes * 60
         try:
-            data = await self.client.query_range(query, start=start, end=end, step=step_seconds)
+            data = await self.client.query_range(
+                query, start=start, end=end, step=step_seconds
+            )
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -124,20 +161,27 @@ class PromQueryRange(Tool):
             metric = r.get("metric", {})
             values = r.get("values", [])
             if values:
-                compact.append({
-                    "labels": {k: v for k, v in metric.items() if not k.startswith("__")},
-                    "points": len(values),
-                    "first": values[0],
-                    "last": values[-1],
-                })
+                compact.append(
+                    {
+                        "labels": {
+                            k: v for k, v in metric.items() if not k.startswith("__")
+                        },
+                        "points": len(values),
+                        "first": values[0],
+                        "last": values[-1],
+                    }
+                )
 
-        return json.dumps({
-            "query": query,
-            "range_minutes": minutes,
-            "step_seconds": step_seconds,
-            "series_count": len(results),
-            "result": compact,
-        }, indent=2)
+        return json.dumps(
+            {
+                "query": query,
+                "range_minutes": minutes,
+                "step_seconds": step_seconds,
+                "series_count": len(results),
+                "result": compact,
+            },
+            indent=2,
+        )
 
 
 def build_prom_tools(base_url: str) -> tuple[list[Tool], PromClient]:

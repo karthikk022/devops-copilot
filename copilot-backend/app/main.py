@@ -28,11 +28,15 @@ async def lifespan(app: FastAPI):
 
     app.state.settings = settings
     app.state.embedder = EmbeddingClient(model_name=settings.embedding_model)
-    app.state.vectorstore = VectorStore(settings.database_url, dim=settings.embedding_dim)
+    app.state.vectorstore = VectorStore(
+        settings.database_url, dim=settings.embedding_dim
+    )
 
     connected = await app.state.vectorstore.connect()
     if not connected:
-        logger.warning("RAG disabled: vector store unreachable at %s", settings.database_url)
+        logger.warning(
+            "RAG disabled: vector store unreachable at %s", settings.database_url
+        )
     app.state.rag = RAGPipeline(
         app.state.vectorstore,
         app.state.embedder,
@@ -61,7 +65,7 @@ async def lifespan(app: FastAPI):
         )
         app.state._tool_clients = clients
         logger.info("tools_ready")
-    except Exception as e:
+    except Exception:
         logger.exception("tools_init_failed")
         app.state.tools = None
         app.state._tool_clients = ()

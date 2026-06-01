@@ -26,6 +26,7 @@ export function useAutoScroll(deps: unknown[]) {
   useEffect(() => {
     if (!ref.current || !stickToBottom) return;
     ref.current.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => {

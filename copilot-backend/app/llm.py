@@ -1,6 +1,5 @@
-import json
 import logging
-from typing import Any, AsyncIterator, Dict, List, Literal, Optional
+from typing import Any, AsyncIterator, List, Optional
 
 from openai import AsyncOpenAI, APIError, APIConnectionError, RateLimitError
 
@@ -30,7 +29,10 @@ class LLMClient:
 
     @property
     def configured(self) -> bool:
-        return bool(self.settings.openrouter_api_key and self.settings.openrouter_api_key.startswith("sk-or-"))
+        return bool(
+            self.settings.openrouter_api_key
+            and self.settings.openrouter_api_key.startswith("sk-or-")
+        )
 
     async def _completion(
         self,
@@ -64,7 +66,15 @@ class LLMClient:
         for m in models_to_try:
             try:
                 kwargs["model"] = m
-                logger.info("llm_request", extra={"model": m, "messages": len(messages), "tools": len(tools or []), "stream": stream})
+                logger.info(
+                    "llm_request",
+                    extra={
+                        "model": m,
+                        "messages": len(messages),
+                        "tools": len(tools or []),
+                        "stream": stream,
+                    },
+                )
                 return await self.client.chat.completions.create(**kwargs)
             except RateLimitError as e:
                 last_error = e
@@ -84,7 +94,10 @@ class LLMClient:
         tools: Optional[List[dict]] = None,
     ) -> AsyncIterator[dict]:
         if not self.configured:
-            yield {"type": "error", "content": "OPENROUTER_API_KEY not configured. Set it in copilot-backend/.env"}
+            yield {
+                "type": "error",
+                "content": "OPENROUTER_API_KEY not configured. Set it in copilot-backend/.env",
+            }
             return
 
         payload = [m.model_dump(exclude_none=True) for m in messages]

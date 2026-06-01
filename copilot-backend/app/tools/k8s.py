@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -16,7 +15,12 @@ SA_CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
 
 class K8sClient:
-    def __init__(self, api_url: Optional[str] = None, token: Optional[str] = None, verify: bool = True):
+    def __init__(
+        self,
+        api_url: Optional[str] = None,
+        token: Optional[str] = None,
+        verify: bool = True,
+    ):
         if api_url:
             self.api_url = api_url.rstrip("/")
         else:
@@ -64,8 +68,14 @@ class K8sListPods(Tool):
     parameters = {
         "type": "object",
         "properties": {
-            "namespace": {"type": "string", "description": "Kubernetes namespace (default: devops-copilot)"},
-            "label_selector": {"type": "string", "description": "Optional label selector, e.g. 'app=sample-api'"},
+            "namespace": {
+                "type": "string",
+                "description": "Kubernetes namespace (default: devops-copilot)",
+            },
+            "label_selector": {
+                "type": "string",
+                "description": "Optional label selector, e.g. 'app=sample-api'",
+            },
         },
         "required": [],
     }
@@ -73,11 +83,15 @@ class K8sListPods(Tool):
     def __init__(self, client: K8sClient):
         self.client = client
 
-    async def execute(self, namespace: str = "devops-copilot", label_selector: Optional[str] = None) -> str:
+    async def execute(
+        self, namespace: str = "devops-copilot", label_selector: Optional[str] = None
+    ) -> str:
         params: dict[str, Any] = {}
         if label_selector:
             params["labelSelector"] = label_selector
-        data = await self.client.get(f"/api/v1/namespaces/{namespace}/pods", params=params)
+        data = await self.client.get(
+            f"/api/v1/namespaces/{namespace}/pods", params=params
+        )
         items = data.get("items", [])
         rows = []
         for p in items:
@@ -87,15 +101,19 @@ class K8sListPods(Tool):
             ready = sum(1 for c in container_states if c.get("ready"))
             total = len(container_states)
             restarts = sum(c.get("restartCount", 0) for c in container_states)
-            rows.append({
-                "name": p["metadata"]["name"],
-                "phase": phase,
-                "ready": f"{ready}/{total}",
-                "restarts": restarts,
-                "node": p.get("spec", {}).get("nodeName", "—"),
-                "age": p["metadata"].get("creationTimestamp", "—"),
-            })
-        return json.dumps({"namespace": namespace, "count": len(rows), "pods": rows}, indent=2)
+            rows.append(
+                {
+                    "name": p["metadata"]["name"],
+                    "phase": phase,
+                    "ready": f"{ready}/{total}",
+                    "restarts": restarts,
+                    "node": p.get("spec", {}).get("nodeName", "—"),
+                    "age": p["metadata"].get("creationTimestamp", "—"),
+                }
+            )
+        return json.dumps(
+            {"namespace": namespace, "count": len(rows), "pods": rows}, indent=2
+        )
 
 
 class K8sGetPodLogs(Tool):
@@ -107,8 +125,17 @@ class K8sGetPodLogs(Tool):
             "namespace": {"type": "string", "default": "devops-copilot"},
             "pod": {"type": "string", "description": "Pod name"},
             "container": {"type": "string", "description": "Container name (optional)"},
-            "tail_lines": {"type": "integer", "default": 100, "minimum": 1, "maximum": 5000},
-            "previous": {"type": "boolean", "default": False, "description": "Get logs from previous container instance"},
+            "tail_lines": {
+                "type": "integer",
+                "default": 100,
+                "minimum": 1,
+                "maximum": 5000,
+            },
+            "previous": {
+                "type": "boolean",
+                "default": False,
+                "description": "Get logs from previous container instance",
+            },
         },
         "required": ["pod"],
     }
@@ -129,7 +156,9 @@ class K8sGetPodLogs(Tool):
             params["container"] = container
         if previous:
             params["previous"] = "true"
-        data = await self.client.get(f"/api/v1/namespaces/{namespace}/pods/{pod}/log", params=params)
+        data = await self.client.get(
+            f"/api/v1/namespaces/{namespace}/pods/{pod}/log", params=params
+        )
         return data if isinstance(data, str) else json.dumps(data)
 
 
@@ -204,19 +233,28 @@ class K8sListDeployments(Tool):
         self.client = client
 
     async def execute(self, namespace: str = "devops-copilot") -> str:
-        data = await self.client.get(f"/apis/apps/v1/namespaces/{namespace}/deployments")
+        data = await self.client.get(
+            f"/apis/apps/v1/namespaces/{namespace}/deployments"
+        )
         rows = []
         for d in data.get("items", []):
             spec = d.get("spec", {})
             status = d.get("status", {})
-            rows.append({
-                "name": d["metadata"]["name"],
-                "replicas_desired": spec.get("replicas"),
-                "replicas_ready": status.get("readyReplicas"),
-                "replicas_available": status.get("availableReplicas"),
-                "image": spec.get("template", {}).get("spec", {}).get("containers", [{}])[0].get("image"),
-            })
-        return json.dumps({"namespace": namespace, "count": len(rows), "deployments": rows}, indent=2)
+            rows.append(
+                {
+                    "name": d["metadata"]["name"],
+                    "replicas_desired": spec.get("replicas"),
+                    "replicas_ready": status.get("readyReplicas"),
+                    "replicas_available": status.get("availableReplicas"),
+                    "image": spec.get("template", {})
+                    .get("spec", {})
+                    .get("containers", [{}])[0]
+                    .get("image"),
+                }
+            )
+        return json.dumps(
+            {"namespace": namespace, "count": len(rows), "deployments": rows}, indent=2
+        )
 
 
 def build_k8s_tools(k8s_api_url: Optional[str] = None) -> tuple[list[Tool], K8sClient]:

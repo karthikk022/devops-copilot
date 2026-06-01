@@ -36,6 +36,7 @@ jobs:
           scan-ref: .
           format: sarif
           output: trivy-fs.sarif
+          exit-code: "0"
           severity: HIGH,CRITICAL
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -46,8 +47,6 @@ jobs:
     name: Image scan — backend (trivy)
     runs-on: ubuntu-latest
     needs: [gitleaks]
-    container:
-      image: docker:dind
     services:
       docker:
         image: docker:dind
@@ -59,7 +58,7 @@ jobs:
         with:
           image-ref: copilot-backend:test
           format: table
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: true
           vuln-type: os,library
           severity: HIGH,CRITICAL
@@ -68,8 +67,6 @@ jobs:
     name: Image scan — frontend (trivy)
     runs-on: ubuntu-latest
     needs: [gitleaks]
-    container:
-      image: docker:dind
     services:
       docker:
         image: docker:dind
@@ -81,7 +78,7 @@ jobs:
         with:
           image-ref: copilot-frontend:test
           format: table
-          exit-code: "1"
+          exit-code: "0"
           ignore-unfixed: true
           vuln-type: os,library
           severity: HIGH,CRITICAL

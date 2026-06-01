@@ -3,7 +3,7 @@ import os
 from typing import Optional
 
 from .base import ToolRegistry
-from .k8s import K8sClient, build_k8s_tools
+from .k8s import build_k8s_tools
 from .loki import build_loki_tools
 from .prometheus import build_prom_tools
 
@@ -17,7 +17,9 @@ async def build_registry(
 ) -> ToolRegistry:
     registry = ToolRegistry()
 
-    k8s_tools, k8s_client = build_k8s_tools(k8s_api_url=k8s_api_url or os.getenv("K8S_API_URL"))
+    k8s_tools, k8s_client = build_k8s_tools(
+        k8s_api_url=k8s_api_url or os.getenv("K8S_API_URL")
+    )
     for t in k8s_tools:
         registry.register(t)
 

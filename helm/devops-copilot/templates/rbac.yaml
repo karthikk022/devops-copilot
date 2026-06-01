@@ -1,0 +1,55 @@
+{{- if .Values.backend.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-backend-reader
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - namespaces
+      - nodes
+      - events
+      - configmaps
+      - services
+      - endpoints
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources:
+      - servicemonitors
+      - prometheusrules
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-backend-reader
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "devops-copilot.backend.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "devops-copilot.fullname" . }}-backend-reader
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

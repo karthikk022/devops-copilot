@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-config
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+data:
+  LLM_MODEL: {{ .Values.openrouter.model | quote }}
+  LLM_FALLBACK_MODELS: {{ .Values.openrouter.fallbackModels | quote }}
+  LLM_TEMPERATURE: {{ .Values.openrouter.temperature | quote }}
+  LLM_MAX_TOKENS: {{ .Values.openrouter.maxTokens | quote }}
+  {{- if .Values.postgres.enabled }}
+  DATABASE_URL: "postgresql://{{ .Values.postgres.auth.username }}:{{ .Values.postgres.auth.password }}@{{ include "devops-copilot.fullname" . }}-postgres:{{ .Values.postgres.service.port }}/{{ .Values.postgres.auth.database }}"
+  {{- end }}
+  EMBEDDING_MODEL: {{ .Values.rag.embeddingModel | quote }}
+  EMBEDDING_DIM: {{ .Values.rag.embeddingDim | quote }}
+  RAG_TOP_K: {{ .Values.rag.topK | quote }}
+  RAG_SIMILARITY_THRESHOLD: {{ .Values.rag.similarityThreshold | quote }}
+  AUTO_INGEST_RUNBOOKS: {{ .Values.rag.autoIngestRunbooks | quote }}
+  RUNBOOKS_DIR: "/app/runbooks"
+  K8S_API_URL: ""
+  K8S_BEARER_TOKEN: ""
+  AGENT_MAX_ITERATIONS: {{ .Values.agent.maxIterations | quote }}
+  PROMETHEUS_URL: {{ .Values.external.prometheusUrl | quote }}
+  LOKI_URL: {{ .Values.external.lokiUrl | quote }}
+  CORS_ORIGINS: {{ .Values.external.corsOrigins | quote }}
+  LOG_LEVEL: "INFO"

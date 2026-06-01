@@ -1,0 +1,19 @@
+title = "Gitleaks config for devops-copilot"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist of test/placeholder secrets"
+paths = [
+  '''.env.example$''',
+  '''.env.test$''',
+  '''docs/.*\.md$''',
+  '''README.md$''',
+  '''helm/devops-copilot/templates/secret.yaml$''',
+]
+
+regexes = [
+  '''sk-or-v1-test-placeholder-not-real''',
+  '''placeholder''',
+]

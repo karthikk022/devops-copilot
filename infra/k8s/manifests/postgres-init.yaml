@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: devops-copilot
+data:
+  01-pgvector.sql: |
+    -- Enable pgvector extension. Runs once on first DB init.
+    CREATE EXTENSION IF NOT EXISTS vector;

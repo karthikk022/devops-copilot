@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sample-api
+  namespace: devops-copilot
+  labels:
+    app: sample-api
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - devops-copilot
+  selector:
+    matchLabels:
+      app: sample-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s

@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sample-api-alerts
+  namespace: devops-copilot
+  labels:
+    app: sample-api
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: sample-api
+      interval: 30s
+      rules:
+        - alert: SampleApiHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{app="sample-api",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{app="sample-api"}[5m]))
+            > 0.10
+          for: 5m
+          labels:
+            severity: critical
+            service: sample-api
+          annotations:
+            summary: "sample-api error rate above 10%"
+            description: "5xx rate is {{ $value | humanizePercentage }} for the last 5 minutes."
+
+        - alert: SampleApiHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (route) (rate(http_request_duration_seconds_bucket{app="sample-api"}[5m]))
+            ) > 3
+          for: 5m
+          labels:
+            severity: warning
+            service: sample-api
+          annotations:
+            summary: "sample-api p95 latency > 3s on {{ $labels.route }}"
+
+        - alert: SampleApiHighMemory
+          expr: |
+            process_resident_memory_bytes{app="sample-api"} > 200 * 1024 * 1024
+          for: 5m
+          labels:
+            severity: warning
+            service: sample-api
+          annotations:
+            summary: "sample-api RSS memory > 200MB (possible leak)"
+
+        - alert: SampleApiPodCrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{pod=~"sample-api-.*"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            service: sample-api
+          annotations:
+            summary: "sample-api pod {{ $labels.pod }} is crash-looping"
+
+        - alert: SampleApiOOMKilled
+          expr: |
+            increase(kube_pod_container_status_last_terminated_reason{reason="OOMKilled",pod=~"sample-api-.*"}[15m]) > 0
+          labels:
+            severity: critical
+            service: sample-api
+          annotations:
+            summary: "sample-api pod {{ $labels.pod }} was OOMKilled"

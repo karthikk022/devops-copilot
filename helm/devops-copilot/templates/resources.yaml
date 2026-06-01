@@ -1,0 +1,24 @@
+{{- if .Values.resources.quota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-quota
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+spec:
+  hard:
+    {{- toYaml .Values.resources.quota.hard | nindent 4 }}
+{{- end }}
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-pdb
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "devops-copilot.labels" . | nindent 6 }}
+{{- end }}

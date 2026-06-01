@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-copilot.fullname" . }}-runbooks
+  labels:
+    {{- include "devops-copilot.labels" . | nindent 4 }}
+data:
+  sample-api.md: |
+    # Sample API Runbook (managed by Helm)
+
+    ## Overview
+    `sample-api` is a Node.js Express service deployed in the `{{ .Release.Namespace }}` namespace.
+
+    ## Known failure modes
+
+    ### 1. Intermittent 500s on `/api/users/:id`
+    **Symptom:** ~14% of requests return 500 with `database connection timeout`.
+    **Mitigation:** `kubectl rollout restart deployment/sample-api -n {{ .Release.Namespace }}`
+
+    ### 2. Slow responses on `/api/slow`
+    **Symptom:** p95 latency > 3s.
+    **Mitigation:** `kubectl scale deployment/sample-api -n {{ .Release.Namespace }} --replicas=4`
+
+    ### 3. Memory leak via `/api/leak`
+    **Symptom:** RSS grows ~5MB per call.
+    **Mitigation:** investigate the `memoryLeak` global array in `server.js`.
+
+    ### 4. Unhandled promise rejections on `/api/crash`
+    **Mitigation:** wrap async handlers with try/catch.
+
+    ### 5. SIGTERM not handled
+    **Mitigation:** implement proper SIGTERM handler.

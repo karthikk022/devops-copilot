@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: runbooks
+  namespace: devops-copilot
+data:
+  sample-api.md: |
+    # Sample API Runbook
+
+    ## Overview
+    `sample-api` is a Node.js Express service deployed in the `devops-copilot` namespace.
+
+    ## Known failure modes
+
+    ### 1. Intermittent 500s on `/api/users/:id`
+    **Symptom:** ~14% of `/api/users/:id` requests return 500 with `database connection timeout`.
+    **Log signature:** `database connection timeout` at `error` level.
+    **Mitigation:** restart sample-api to clear stale pool: `kubectl rollout restart deployment/sample-api -n devops-copilot`.
+
+    ### 2. Slow responses on `/api/slow`
+    **Symptom:** p95 latency > 3s, occasional 8s+ responses.
+    **Log signature:** `slow endpoint hit, simulating long query` at `warn` level.
+    **Mitigation:** scale sample-api replicas: `kubectl scale deployment/sample-api -n devops-copilot --replicas=4`.
+
+    ### 3. Memory leak via `/api/leak`
+    **Symptom:** RSS memory grows ~5MB per call, eventually OOMKill.
+    **Log signature:** `memory leak endpoint hit` at `warn` level with growing `chunks` count.
+    **Mitigation:** increase memory limit AND investigate the `memoryLeak` global array in `server.js`.
+
+    ### 4. Unhandled promise rejections on `/api/crash`
+    **Symptom:** `unhandledRejection` events in pod logs.
+    **Log signature:** `unhandled promise rejection` at `fatal` level.
+    **Mitigation:** wrap async handlers with try/catch or use express-async-errors middleware.
+
+    ### 5. SIGTERM not handled
+    **Symptom:** pod takes 30s to terminate.
+    **Log signature:** `SIGTERM received, refusing graceful shutdown` at `info`.
+    **Mitigation:** implement proper SIGTERM handler that stops accepting new requests, waits for in-flight to finish, closes DB.
+
+    ## Useful queries
+
+    ### Prometheus
+    ```promql
+    sum by (status) (rate(http_requests_total{app="sample-api"}[5m]))
+    histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{app="sample-api"}[5m])))
+    deriv(process_resident_memory_bytes{app="sample-api"}[10m])
+    ```
+
+    ### Loki / LogQL
+    ```logql
+    {namespace="devops-copilot",app="sample-api"} |= "error"
+    {namespace="devops-copilot",app="sample-api"} | json | level="error"
+    {namespace="devops-copilot",app="sample-api"} |~ "memory leak|database timeout"
+    ```

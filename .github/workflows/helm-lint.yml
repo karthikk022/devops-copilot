@@ -1,0 +1,30 @@
+name: helm-lint
+
+on:
+  pull_request:
+    paths:
+      - "helm/**"
+      - ".github/workflows/helm-lint.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.2
+      - name: helm lint (default values)
+        run: helm lint helm/devops-copilot
+      - name: helm lint (rendered)
+        run: |
+          helm template devops-copilot helm/devops-copilot \
+            --set openrouter.apiKey=placeholder \
+            > /tmp/manifest.yaml
+          wc -l /tmp/manifest.yaml
+      - name: helm dependency build
+        run: helm dependency build helm/devops-copilot || true
+      - name: kubeconform
+        uses: docker://ghcr.io/yannh/kubeconform:latest
+        with:
+          args: -strict -summary -ignore-missing-schemas /tmp/manifest.yaml

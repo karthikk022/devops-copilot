@@ -1,0 +1,21 @@
+apiVersion: v2
+name: devops-copilot
+description: LLM-powered DevOps Copilot with RAG, tool-calling, and observability
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - ai
+  - llm
+  - devops
+  - sre
+  - kubernetes
+  - rag
+home: https://github.com/karthikk022/devops-copilot
+sources:
+  - https://github.com/karthikk022/devops-copilot
+maintainers:
+  - name: DevOps Copilot Maintainers
+    email: karthikchinnaiyan0223@gmail.com
+icon: https://raw.githubusercontent.com/karthikk022/devops-copilot/main/docs/icon.png
+kubeVersion: ">=1.27.0-0"

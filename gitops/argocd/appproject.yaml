@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: devops-copilot
+  namespace: argocd
+spec:
+  description: DevOps Copilot application project
+  sourceRepos:
+    - https://github.com/karthikk022/devops-copilot.git
+  destinations:
+    - namespace: devops-copilot
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+  orphanedResources:
+    warn: true
+  roles:
+    - name: developer
+      policies:
+        - p, proj:devops-copilot:developer, applications, get, devops-copilot/*, allow
+        - p, proj:devops-copilot:developer, applications, sync, devops-copilot/*, allow

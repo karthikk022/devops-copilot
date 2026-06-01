@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: copilot-backend-config
+  namespace: devops-copilot
+data:
+  LLM_MODEL: "meta-llama/llama-3.3-70b-instruct:free"
+  LLM_FALLBACK_MODELS: "meta-llama/llama-3.1-8b-instruct:free,qwen/qwen-2.5-coder-32b-instruct:free"
+  LLM_TEMPERATURE: "0.2"
+  LLM_MAX_TOKENS: "2048"
+  PROMETHEUS_URL: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
+  LOKI_URL: "http://loki-gateway.monitoring.svc.cluster.local:80"
+  DATABASE_URL: "postgresql://copilot:copilot@postgres.devops-copilot.svc.cluster.local:5432/copilot"
+  EMBEDDING_MODEL: "BAAI/bge-small-en-v1.5"
+  EMBEDDING_DIM: "384"
+  RAG_TOP_K: "4"
+  RAG_SIMILARITY_THRESHOLD: "0.35"
+  AUTO_INGEST_RUNBOOKS: "true"
+  RUNBOOKS_DIR: "/app/runbooks"
+  K8S_API_URL: ""
+  K8S_BEARER_TOKEN: ""
+  AGENT_MAX_ITERATIONS: "5"
+  PROMETHEUS_URL: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
+  LOKI_URL: "http://loki-gateway.monitoring.svc.cluster.local:80"
+  CORS_ORIGINS: "http://localhost:8080,http://localhost:3000"
+  LOG_LEVEL: "INFO"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: copilot-backend-secrets
+  namespace: devops-copilot
+type: Opaque
+stringData:
+  OPENROUTER_API_KEY: "REPLACE_ME_BEFORE_DEPLOY"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: copilot-backend
+  namespace: devops-copilot
+  labels:
+    app: copilot-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: copilot-backend
+  template:
+    metadata:
+      labels:
+        app: copilot-backend
+    spec:
+      serviceAccountName: copilot-backend
+      containers:
+        - name: backend
+          image: copilot-backend:0.2.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: copilot-backend-config }
+            - secretRef:    { name: copilot-backend-secrets }
+          volumeMounts:
+            - name: runbooks
+              mountPath: /app/runbooks
+              readOnly: true
+          readinessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { cpu: 1,    memory: 1Gi  }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+      volumes:
+        - name: runbooks
+          configMap:
+            name: runbooks
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: copilot-backend
+  namespace: devops-copilot
+spec:
+  type: ClusterIP
+  selector:
+    app: copilot-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: copilot-backend
+  namespace: devops-copilot
+spec:
+  podSelector:
+    matchLabels:
+      app: copilot-backend
+  policyTypes: ["Ingress", "Egress"]
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 8000
+          protocol: TCP
+  egress:
+    - to: []  # OpenRouter, Prometheus, Loki
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+        - port: 9090
+          protocol: TCP

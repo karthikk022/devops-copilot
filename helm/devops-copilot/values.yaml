@@ -1,0 +1,164 @@
+# Default values for devops-copilot
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Name override; if empty, defaults to the chart name
+nameOverride: ""
+fullnameOverride: ""
+
+# Global image settings
+image:
+  registry: ghcr.io
+  repository: karthikk022/devops-copilot
+  pullPolicy: IfNotPresent
+  # -- Overrides for all images. Set per-component tag below.
+
+# -- Backend (FastAPI) image
+backend:
+  image:
+    repository: ghcr.io/karthikk022/devops-copilot/copilot-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi   }
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+  rbac:
+    create: true
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: ["ALL"] }
+  networkPolicy:
+    enabled: true
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+# -- Frontend (Next.js) image
+frontend:
+  image:
+    repository: ghcr.io/karthikk022/devops-copilot/copilot-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests: { cpu: 50m,  memory: 128Mi }
+    limits:   { cpu: 200m, memory: 256Mi }
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: copilot.local
+        paths: [{ path: /, pathType: Prefix }]
+    tls: []
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities: { drop: ["ALL"] }
+
+# -- Postgres + pgvector
+postgres:
+  enabled: true
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+    pullPolicy: IfNotPresent
+  auth:
+    existingSecret: ""
+    username: copilot
+    password: copilot
+    database: copilot
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+    accessModes: [ReadWriteOnce]
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 1Gi   }
+  service:
+    type: ClusterIP
+    port: 5432
+
+# -- OpenRouter / LLM config
+openrouter:
+  # -- REQUIRED. Set via -f or in values-prod.yaml. Never commit a real key.
+  apiKey: ""
+  apiKeyExistingSecret: ""
+  apiKeyExistingSecretKey: OPENROUTER_API_KEY
+  model: meta-llama/llama-3.3-70b-instruct:free
+  fallbackModels: "meta-llama/llama-3.1-8b-instruct:free,qwen/qwen-2.5-coder-32b-instruct:free"
+  temperature: 0.2
+  maxTokens: 2048
+
+# -- RAG / embedding config
+rag:
+  topK: 4
+  similarityThreshold: 0.35
+  embeddingModel: BAAI/bge-small-en-v1.5
+  embeddingDim: 384
+  autoIngestRunbooks: true
+
+# -- External integrations
+external:
+  prometheusUrl: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+  lokiUrl: http://loki-gateway.monitoring.svc.cluster.local:80
+  corsOrigins: "http://localhost:8080,https://copilot.local"
+
+# -- Agent loop config
+agent:
+  maxIterations: 5
+
+# -- Resource quota
+resources:
+  quota:
+    enabled: false
+    hard:
+      requests.cpu: "2"
+      requests.memory: 4Gi
+      limits.cpu: "4"
+      limits.memory: 8Gi
+
+# -- PodDisruptionBudget
+pdb:
+  enabled: false
+  minAvailable: 1
+
+# -- Topology spread
+topologySpreadConstraints: []
+
+# -- Common labels & annotations
+podLabels: {}
+podAnnotations: {}
+
+# -- Service Monitor for the backend (consumed by kube-prometheus-stack)
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  path: /api/health
+
+# -- Image pull secrets
+imagePullSecrets: []

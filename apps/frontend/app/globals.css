@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "highlight.js/styles/github-dark.css";
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --border: 217 33% 18%;
+    --primary: 189 94% 55%;
+    --primary-foreground: 222 47% 6%;
+    --accent: 189 94% 55%;
+    --accent-foreground: 222 47% 6%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html, body, #__next {
+    height: 100%;
+  }
+}
+
+@layer components {
+  .message-content pre {
+    @apply rounded-lg overflow-x-auto p-3 my-2 text-xs bg-black/40 border border-white/5;
+  }
+
+  .message-content code {
+    @apply font-mono;
+  }
+
+  .message-content :not(pre) > code {
+    @apply px-1.5 py-0.5 rounded bg-white/10 text-cyan-300 text-[0.85em];
+  }
+
+  .message-content p {
+    @apply my-2 leading-relaxed;
+  }
+
+  .message-content ul, .message-content ol {
+    @apply my-2 pl-6;
+  }
+
+  .message-content ul {
+    @apply list-disc;
+  }
+
+  .message-content ol {
+    @apply list-decimal;
+  }
+
+  .message-content li {
+    @apply my-1;
+  }
+
+  .message-content a {
+    @apply text-cyan-400 underline;
+  }
+
+  .message-content table {
+    @apply my-3 border-collapse w-full text-sm;
+  }
+
+  .message-content th, .message-content td {
+    @apply border border-white/10 px-3 py-2 text-left;
+  }
+
+  .message-content th {
+    @apply bg-white/5 font-semibold;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+}

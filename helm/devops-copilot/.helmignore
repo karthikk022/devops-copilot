@@ -1,0 +1,26 @@
+# Patterns to ignore
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.hg/
+.hgignore
+.svn/
+*.swp
+*.bak
+*.tmp
+*.orig
+*.rej
+.idea/
+.vscode/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.helmignore
+OWNERS
+README.md
+LICENSE
+docs/
+*.md

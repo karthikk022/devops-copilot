@@ -1,0 +1,103 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy-fs:
+    name: Filesystem scan (trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+
+  trivy-backend:
+    name: Image scan — backend (trivy)
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    container:
+      image: docker:dind
+    services:
+      docker:
+        image: docker:dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t copilot-backend:test ./copilot-backend
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: copilot-backend:test
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+  trivy-frontend:
+    name: Image scan — frontend (trivy)
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    container:
+      image: docker:dind
+    services:
+      docker:
+        image: docker:dind
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontend image
+        run: docker build -t copilot-frontend:test ./apps/frontend
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: copilot-frontend:test
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["python", "javascript-typescript"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

@@ -27,7 +27,14 @@ async def lifespan(app: FastAPI):
     )
 
     app.state.settings = settings
-    app.state.embedder = EmbeddingClient(model_name=settings.embedding_model)
+    try:
+        app.state.embedder = EmbeddingClient(model_name=settings.embedding_model)
+        embedder_ok = True
+    except Exception:
+        logger.exception("embedder_load_failed_RAG_disabled")
+        app.state.embedder = None
+        embedder_ok = False
+
     app.state.vectorstore = VectorStore(
         settings.database_url, dim=settings.embedding_dim
     )
@@ -37,12 +44,17 @@ async def lifespan(app: FastAPI):
         logger.warning(
             "RAG disabled: vector store unreachable at %s", settings.database_url
         )
-    app.state.rag = RAGPipeline(
-        app.state.vectorstore,
-        app.state.embedder,
-        top_k=settings.rag_top_k,
-        threshold=settings.rag_similarity_threshold,
-    )
+
+    if embedder_ok and connected:
+        app.state.rag = RAGPipeline(
+            app.state.vectorstore,
+            app.state.embedder,
+            top_k=settings.rag_top_k,
+            threshold=settings.rag_similarity_threshold,
+        )
+    else:
+        logger.warning("RAG_disabled embedder=%s db=%s", embedder_ok, connected)
+        app.state.rag = None
 
     if connected and settings.auto_ingest_runbooks:
         runbooks = Path(settings.runbooks_dir)

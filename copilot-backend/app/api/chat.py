@@ -172,7 +172,19 @@ async def chat(
                     yield f"data: {json.dumps({'type': 'tool_call', 'tool_name': c['name'], 'tool_args': args, 'tool_call_id': c['id']}, ensure_ascii=False)}\n\n".encode(
                         "utf-8"
                     )
-                    result = await tools.call(c["name"], args)
+                    if tools is None:
+                        result = (
+                            f"Tool '{c['name']}' is unavailable in this environment. "
+                            "The Kubernetes/Prometheus/Loki tools were not initialized "
+                            "at startup (no cluster or observability stack reachable). "
+                            "Provide a direct answer based on your knowledge instead."
+                        )
+                    else:
+                        try:
+                            result = await tools.call(c["name"], args)
+                        except Exception as e:
+                            logger.exception("tool_call_failed", extra={"tool": c["name"]})
+                            result = f"Tool '{c['name']}' failed: {e}"
                     yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': c['name'], 'content': result[:4000], 'tool_call_id': c['id']}, ensure_ascii=False)}\n\n".encode(
                         "utf-8"
                     )

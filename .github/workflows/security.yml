@@ -29,16 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Trivy scanner
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: sarif
-          output: trivy-fs.sarif
-          exit-code: "0"
-          ignore-unfixed: true
-          severity: HIGH,CRITICAL
+      - name: Install trivy CLI
+        run: |
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz
+          sudo mv trivy /usr/local/bin/
+          trivy --version
+      - name: Run Trivy filesystem scan
+        run: |
+          trivy fs . \
+            --format sarif \
+            --output trivy-fs.sarif \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 0
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
         continue-on-error: true
@@ -53,17 +56,21 @@ jobs:
       image: docker:dind
       options: --privileged
     steps:
+      - name: Install bash, curl, trivy
+        run: |
+          apk add --no-cache bash curl
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin trivy
+          trivy --version
       - uses: actions/checkout@v4
       - name: Build backend image
         run: docker build -t copilot-backend:test ./copilot-backend
-      - uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: copilot-backend:test
-          format: table
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: HIGH,CRITICAL
+      - name: Scan backend image
+        run: |
+          trivy image copilot-backend:test \
+            --format table \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 0
 
   trivy-frontend:
     name: Image scan — frontend (trivy)
@@ -73,17 +80,21 @@ jobs:
       image: docker:dind
       options: --privileged
     steps:
+      - name: Install bash, curl, trivy
+        run: |
+          apk add --no-cache bash curl
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin trivy
+          trivy --version
       - uses: actions/checkout@v4
       - name: Build frontend image
         run: docker build -t copilot-frontend:test ./apps/frontend
-      - uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: copilot-frontend:test
-          format: table
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: HIGH,CRITICAL
+      - name: Scan frontend image
+        run: |
+          trivy image copilot-frontend:test \
+            --format table \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 0
 
   codeql:
     name: CodeQL analysis

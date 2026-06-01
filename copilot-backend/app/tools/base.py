@@ -54,7 +54,7 @@ class ToolRegistry:
         if not tool:
             return json.dumps({"error": f"Unknown tool: {name}"})
         try:
-            logger.info("tool_invocation", extra={"name": name, "args": arguments})
+            logger.info("tool_invocation", extra={"tool_name": name, "args": arguments})
             result = await tool.execute(**arguments)
             return truncate(
                 result
@@ -62,7 +62,7 @@ class ToolRegistry:
                 else json.dumps(result, indent=2, default=str)
             )
         except Exception as e:
-            logger.exception("tool_execution_failed", extra={"name": name})
+            logger.exception("tool_execution_failed", extra={"tool_name": name})
             return json.dumps({"error": str(e), "tool": name})
 
     def __contains__(self, name: str) -> bool:

@@ -183,7 +183,9 @@ async def chat(
                         try:
                             result = await tools.call(c["name"], args)
                         except Exception as e:
-                            logger.exception("tool_call_failed", extra={"tool": c["name"]})
+                            logger.exception(
+                                "tool_call_failed", extra={"tool": c["name"]}
+                            )
                             result = f"Tool '{c['name']}' failed: {e}"
                     yield f"data: {json.dumps({'type': 'tool_result', 'tool_name': c['name'], 'content': result[:4000], 'tool_call_id': c['id']}, ensure_ascii=False)}\n\n".encode(
                         "utf-8"

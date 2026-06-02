@@ -1,4 +1,5 @@
 """Tests for the tool registry and OpenAI function-calling schema generation."""
+
 import json
 import pytest
 

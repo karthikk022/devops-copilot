@@ -1,11 +1,11 @@
 """Tests for the RAG context formatter and pipeline structure."""
-import pytest
 
 from app.rag import RAGPipeline
 
 
 class FakeVectorStore:
     """Stand-in for VectorStore that records upserts/searches but never connects."""
+
     def __init__(self):
         self.connected = False
         self.upserts = []
@@ -25,6 +25,7 @@ class FakeVectorStore:
 
 class FakeEmbedder:
     """Stand-in for EmbeddingClient that returns the input as a fake embedding."""
+
     def __init__(self, dim=4):
         self.dim = dim
 
@@ -86,7 +87,6 @@ def test_retrieve_returns_empty_when_vectorstore_not_connected():
         embedder=FakeEmbedder(),
     )
     import asyncio
-    result = asyncio.get_event_loop().run_until_complete(
-        rag.retrieve("anything")
-    )
+
+    result = asyncio.get_event_loop().run_until_complete(rag.retrieve("anything"))
     assert result == []

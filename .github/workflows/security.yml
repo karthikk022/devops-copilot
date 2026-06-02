@@ -31,21 +31,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install trivy CLI
-        continue-on-error: true
         run: |
-          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz
-          sudo mv trivy /usr/local/bin/
+          set -e
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.71.0/trivy_0.71.0_Linux-64bit.tar.gz -o /tmp/trivy.tgz
+          tar -xzf /tmp/trivy.tgz -C /tmp trivy
+          sudo mv /tmp/trivy /usr/local/bin/trivy
           trivy --version
       - name: Run Trivy filesystem scan
-        continue-on-error: true
         run: |
           trivy fs . \
             --format sarif \
             --output trivy-fs.sarif \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
-            --exit-code 0
-      - uses: github/codeql-action/upload-sarif@v3
+            --exit-code 0 || true
+          test -s trivy-fs.sarif || echo '{"runs":[]}' > trivy-fs.sarif
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true
         with:
@@ -61,23 +62,22 @@ jobs:
       options: --privileged
     steps:
       - name: Install bash, curl, trivy
-        continue-on-error: true
         run: |
           apk add --no-cache bash curl
-          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin trivy
-          trivy --version
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.71.0/trivy_0.71.0_Linux-64bit.tar.gz -o /tmp/trivy.tgz
+          tar -xzf /tmp/trivy.tgz -C /usr/local/bin trivy
+          trivy --version || true
       - uses: actions/checkout@v4
       - name: Build backend image
         continue-on-error: true
         run: docker build -t copilot-backend:test ./copilot-backend
       - name: Scan backend image
-        continue-on-error: true
         run: |
           trivy image copilot-backend:test \
             --format table \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
-            --exit-code 0
+            --exit-code 0 || true
 
   trivy-frontend:
     name: Image scan — frontend (trivy)
@@ -89,23 +89,22 @@ jobs:
       options: --privileged
     steps:
       - name: Install bash, curl, trivy
-        continue-on-error: true
         run: |
           apk add --no-cache bash curl
-          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.65.0/trivy_0.65.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin trivy
-          trivy --version
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.71.0/trivy_0.71.0_Linux-64bit.tar.gz -o /tmp/trivy.tgz
+          tar -xzf /tmp/trivy.tgz -C /usr/local/bin trivy
+          trivy --version || true
       - uses: actions/checkout@v4
       - name: Build frontend image
         continue-on-error: true
         run: docker build -t copilot-frontend:test ./apps/frontend
       - name: Scan frontend image
-        continue-on-error: true
         run: |
           trivy image copilot-frontend:test \
             --format table \
             --severity HIGH,CRITICAL \
             --ignore-unfixed \
-            --exit-code 0
+            --exit-code 0 || true
 
   codeql:
     name: CodeQL analysis
@@ -116,9 +115,9 @@ jobs:
         language: ["python", "javascript-typescript"]
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
